@@ -1,0 +1,135 @@
+# ScaleIQ Configuration File
+
+# Data Configuration
+data:
+  file_path: "EventsMetricsMarJul.csv"
+  target_column: "avg_logged_events_in_interval"
+  test_size: 0.2
+  sequence_length: 24  # Look back 48 minutes (24 * 2 minutes)
+  forecast_horizons: [6, 12, 24]  # Predict 12, 24, 48 minutes ahead
+
+# Forecasting Model Configuration
+forecasting:
+  # Transformer Architecture
+  d_model: 256
+  nhead: 8
+  num_encoder_layers: 6
+  dim_feedforward: 1024
+  dropout: 0.1
+  
+  # Training Parameters
+  learning_rate: 0.0001
+  weight_decay: 0.00001
+  max_epochs: 100
+  batch_size: 32
+  warmup_steps: 1000
+  
+  # Optimization
+  optimizer: "AdamW"
+  scheduler: "CosineAnnealingWarmRestarts"
+
+# Auto-Scaling Agent Configuration
+scaling:
+  # Action Space
+  min_jobs: 1
+  max_jobs: 100
+  scaling_steps: [0.5, 0.8, 1.0, 1.25, 1.5, 2.0]
+  
+  # DQN Parameters
+  learning_rate: 0.0001
+  gamma: 0.99
+  epsilon_start: 1.0
+  epsilon_end: 0.01
+  epsilon_decay: 10000
+  tau: 0.005  # Soft update parameter
+  
+  # Experience Replay
+  buffer_size: 100000
+  batch_size: 64
+  target_update_freq: 1000
+  
+  # Training
+  num_episodes: 1000
+  max_steps_per_episode: 1000
+  
+  # Reward Function
+  cost_per_job: 1.0
+  sla_penalty: 10.0
+  target_queue_size: 100
+  
+  # Network Architecture
+  hidden_dims: [512, 256, 128]
+  use_dueling: true
+  use_noisy: true
+
+# Training Configuration
+training:
+  gpus: 1  # Set to 0 for CPU-only training
+  precision: 16  # Use 32 for CPU or older GPUs
+  save_checkpoints: true
+  checkpoint_dir: "checkpoints"
+  
+  # Early Stopping
+  early_stopping_patience: 10
+  early_stopping_monitor: "val_total_loss"
+  
+  # Logging
+  log_every_n_steps: 50
+  val_check_interval: 1.0
+
+# Data Processing Configuration
+preprocessing:
+  # Feature Engineering
+  lookback_windows: [6, 12, 24, 72]  # 12min, 24min, 48min, 144min
+  seasonal_periods: [720, 10080]  # Daily (720 * 2min), Weekly (10080 * 2min)
+  
+  # Scaling
+  scaler_type: "robust"  # "robust" or "standard"
+  
+  # Anomaly Detection
+  anomaly_threshold: 2.5  # Z-score threshold
+  
+# Visualization Configuration
+visualization:
+  # Output Directories
+  results_dir: "results"
+  plots_dir: "visualizations"
+  
+  # Plot Settings
+  figure_size: [12, 8]
+  dpi: 300
+  
+  # Interactive Plots
+  enable_plotly: true
+  enable_bokeh: false
+  
+# Hyperparameter Optimization
+hpo:
+  enable: false
+  n_trials: 100
+  study_name: "scaleiq_optimization"
+  
+  # Search Spaces
+  forecasting_search_space:
+    d_model: [128, 256, 512]
+    nhead: [4, 8, 16]
+    num_encoder_layers: [3, 6, 9]
+    learning_rate: [1e-5, 1e-3]
+    
+  scaling_search_space:
+    learning_rate: [1e-5, 1e-3]
+    gamma: [0.95, 0.99]
+    hidden_dims: [[256, 128], [512, 256, 128], [1024, 512, 256]]
+
+# MLOps Configuration
+mlops:
+  # Experiment Tracking
+  use_wandb: false
+  use_mlflow: false
+  
+  # Model Registry
+  model_registry: "local"  # "local", "mlflow", "s3"
+  
+  # Monitoring
+  enable_model_monitoring: false
+  drift_detection_threshold: 0.1
